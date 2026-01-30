@@ -27,7 +27,8 @@ export const dbService = {
       employees: (p.employees || []).map((e: any) => ({
         ...e,
         documents: (e.documents || []).map((d: any) => {
-          const expiryDate = new Date(d.expiry_date);
+          const expiryDateStr = d.expiry_date || d.expiryDate;
+          const expiryDate = expiryDateStr ? new Date(expiryDateStr) : new Date();
           const today = new Date();
           const diffDays = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           
@@ -36,11 +37,14 @@ export const dbService = {
           else if (diffDays <= 30) status = DocStatus.EXPIRING;
 
           return {
-            ...d,
+            id: d.id,
+            type: d.type,
+            issueDate: d.issue_date || d.issueDate,
+            expiryDate: expiryDateStr,
             status,
-            issueDate: d.issue_date,
-            expiry_date: d.expiry_date
-          };
+            fileUrl: d.file_url || d.fileUrl,
+            description: d.description
+          } as Document;
         })
       }))
     })) as Provider[];
@@ -76,21 +80,29 @@ export const dbService = {
     return data[0];
   },
 
-  // Gerenciamento de Tipos de Treinamento (Configurações)
   async getTrainingTypes(): Promise<string[]> {
-    const { data, error } = await supabase
-      .from('training_types')
-      .select('name')
-      .order('name');
-    
-    if (error) {
-      console.warn("Tabela training_types não encontrada, usando fallback.");
+    try {
+      const { data, error } = await supabase
+        .from('training_types')
+        .select('name')
+        .order('name');
+      
+      if (error || !data) throw error;
+      return data.map((t: any) => t.name);
+    } catch (err) {
+      console.warn("Usando lista padrão de NRs para Biometano.");
       return [
-        'NR-01 (Integração)', 'NR-06 (EPI)', 'NR-10 (Elétrica)', 
-        'NR-33 (Confinado)', 'NR-35 (Altura)', 'ASO'
+        'NR-01 (Integração)', 
+        'NR-06 (EPI)', 
+        'NR-10 (Elétrica)', 
+        'NR-13 (Pressão)',
+        'NR-20 (Inflamáveis)',
+        'NR-33 (Confinado)', 
+        'NR-35 (Altura)', 
+        'ASO', 
+        'Detectores H2S'
       ];
     }
-    return data.map((t: any) => t.name);
   },
 
   async addTrainingType(name: string) {

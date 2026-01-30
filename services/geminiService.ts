@@ -1,10 +1,17 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const getAiClient = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY não configurada no ambiente.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const analyzeCompliance = async (providerName: string, employeesData: string) => {
   try {
+    const ai = getAiClient();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Analise a conformidade de segurança para o fornecedor "${providerName}" na usina de purificação de biogás de aterro sanitário "Biometano Caieiras". 
@@ -17,12 +24,13 @@ export const analyzeCompliance = async (providerName: string, employeesData: str
     return response.text;
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
-    return "Não foi possível realizar a análise inteligente no momento.";
+    return `Aviso: A análise IA requer a configuração da API_KEY no Vercel. ${error instanceof Error ? error.message : ""}`;
   }
 };
 
 export const suggestTrainingPlan = async (jobDescription: string) => {
   try {
+    const ai = getAiClient();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `O funcionário terá a seguinte função na purificação de biogás: ${jobDescription}. Liste as NRs e cursos obrigatórios necessários para trabalhar com biometano (Ex: NR-20, NR-33, NR-35).`,
