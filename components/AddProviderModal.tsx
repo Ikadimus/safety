@@ -1,15 +1,17 @@
 
-import React, { useState } from 'react';
-import { X, Factory, Send, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Factory, Send, Loader2, Save } from 'lucide-react';
 import { dbService } from '../services/dbService';
+import { Provider } from '../types';
 
 interface AddProviderModalProps {
   isOpen: boolean;
+  providerToEdit?: Provider | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const AddProviderModal: React.FC<AddProviderModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const AddProviderModal: React.FC<AddProviderModalProps> = ({ isOpen, providerToEdit, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -17,17 +19,32 @@ const AddProviderModal: React.FC<AddProviderModalProps> = ({ isOpen, onClose, on
     contact_email: '',
   });
 
+  useEffect(() => {
+    if (providerToEdit) {
+      setFormData({
+        name: providerToEdit.name,
+        cnpj: providerToEdit.cnpj,
+        contact_email: providerToEdit.contactEmail,
+      });
+    } else {
+      setFormData({ name: '', cnpj: '', contact_email: '' });
+    }
+  }, [providerToEdit, isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await dbService.createProvider(formData);
+      if (providerToEdit) {
+        await dbService.updateProvider(providerToEdit.id, formData);
+      } else {
+        await dbService.createProvider(formData);
+      }
       onSuccess();
-    } catch (err) {
-      alert("Erro ao cadastrar: Verifique se o CNPJ já existe ou as permissões do banco.");
-      console.error(err);
+    } catch (err: any) {
+      alert(`Erro: ${err.message || "Verifique os dados ou as permissões do banco."}`);
     } finally {
       setLoading(false);
     }
@@ -42,18 +59,18 @@ const AddProviderModal: React.FC<AddProviderModalProps> = ({ isOpen, onClose, on
               <Factory className="w-6 h-6 text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-white">Novo Prestador</h2>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Cadastro de Empresa Terceirizada</p>
+              <h2 className="text-xl font-black text-white">{providerToEdit ? 'Editar Prestador' : 'Novo Prestador'}</h2>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Protocolo de Cadastro Empresarial</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
-            <X className="w-6 h-6 text-slate-500" />
+            <X className="w-6 h-6 text-slate-400" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Razão Social / Nome Fantasia</label>
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1 text-white">Razão Social / Nome Fantasia</label>
             <input 
               required
               className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-3.5 text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none transition-all placeholder:text-slate-700"
@@ -64,7 +81,7 @@ const AddProviderModal: React.FC<AddProviderModalProps> = ({ isOpen, onClose, on
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">CNPJ</label>
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1 text-white">CNPJ</label>
             <input 
               required
               className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-3.5 text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none transition-all placeholder:text-slate-700"
@@ -75,7 +92,7 @@ const AddProviderModal: React.FC<AddProviderModalProps> = ({ isOpen, onClose, on
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">E-mail de Contato (Financeiro/RH)</label>
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1 text-white">E-mail de Contato</label>
             <input 
               required
               type="email"
@@ -90,21 +107,21 @@ const AddProviderModal: React.FC<AddProviderModalProps> = ({ isOpen, onClose, on
             <button 
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-4 bg-slate-800 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:text-white transition-all"
+              className="flex-1 px-6 py-4 bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-700 transition-all border border-slate-700"
             >
               Cancelar
             </button>
             <button 
               type="submit"
               disabled={loading}
-              className="flex-2 flex items-center justify-center gap-3 px-10 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-900/20 active:scale-95"
+              className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-900/20 active:scale-95"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
-                  Salvar Cadastro
+                  <Save className="w-4 h-4" />
+                  {providerToEdit ? 'Salvar Alteração' : 'Cadastrar'}
                 </>
               )}
             </button>

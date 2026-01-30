@@ -5,20 +5,30 @@ import Dashboard from './components/Dashboard';
 import ProviderList from './components/ProviderList';
 import EmployeeModal from './components/EmployeeModal';
 import AddProviderModal from './components/AddProviderModal';
+import AddEmployeeModal from './components/AddEmployeeModal';
 import UserAdmin from './components/UserAdmin';
 import Settings from './components/Settings';
 import Login from './components/Login';
 import { dbService } from './services/dbService';
-import { Provider, Employee } from './types';
-import { Loader2, RefreshCcw, DatabaseZap } from 'lucide-react';
+import { Provider, Employee, Document } from './types';
+import { Loader2, RefreshCcw, DatabaseZap, Mail } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('bio_auth') === 'true');
   const [userEmail, setUserEmail] = useState(() => localStorage.getItem('bio_user') || '');
+  const [userName, setUserName] = useState(() => localStorage.getItem('bio_userName') || '');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [isAddProviderOpen, setIsAddProviderOpen] = useState(false);
+  const [providerToEdit, setProviderToEdit] = useState<Provider | null>(null);
+  
+  // Estado global de busca para permitir navegação cross-component
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Estado para edição de colaborador
+  const [employeeToEdit, setEmployeeToEdit] = useState<{providerId: string, providerName: string, employee: Employee} | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +40,7 @@ const App: React.FC = () => {
       const data = await dbService.getFullProvidersData();
       setProviders(data);
     } catch (err: any) {
-      setError("Falha ao conectar com o Supabase. Verifique as credenciais.");
+      setError("Falha ao conectar com o Supabase. Verifique as tabelas ou a rede.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -41,18 +51,54 @@ const App: React.FC = () => {
     fetchData();
   }, [isLoggedIn]);
 
-  const handleLogin = (email: string) => {
+  const handleLogin = (email: string, name: string) => {
     setIsLoggedIn(true);
     setUserEmail(email);
+    setUserName(name);
     localStorage.setItem('bio_auth', 'true');
     localStorage.setItem('bio_user', email);
+    localStorage.setItem('bio_userName', name);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserEmail('');
+    setUserName('');
     localStorage.removeItem('bio_auth');
     localStorage.removeItem('bio_user');
+    localStorage.removeItem('bio_userName');
+  };
+
+  const handleEditProvider = (provider: Provider) => {
+    setProviderToEdit(provider);
+    setIsAddProviderOpen(true);
+  };
+
+  const handleCloseProviderModal = () => {
+    setIsAddProviderOpen(false);
+    setProviderToEdit(null);
+  };
+
+  const handleEditEmployee = (providerId: string, providerName: string, employee: Employee) => {
+    setEmployeeToEdit({ providerId, providerName, employee });
+  };
+
+  const handleDashboardProviderClick = (name: string) => {
+    setSearchTerm(name);
+    setActiveTab('providers');
+  };
+
+  const handleNotifyCompany = (provider: Provider, employee: Employee, doc: Document) => {
+    const subject = encodeURIComponent(`ALERTA DE SEGURANÇA: Documentação Vencida - ${employee.name}`);
+    const body = encodeURIComponent(
+      `Prezada equipe da ${provider.name},\n\n` +
+      `Identificamos através da plataforma BioSafety que o documento "${doc.type}" do colaborador ${employee.name} (CPF: ${employee.cpf}) VENCEU em ${new Date(doc.expiryDate).toLocaleDateString('pt-BR')}.\n\n` +
+      `Para garantir a continuidade das operações na Usina de Biometano Caieiras, solicitamos que o colaborador realize a reciclagem/atualização necessária e que o novo certificado seja enviado imediatamente para regularização do acesso.\n\n` +
+      `Atenciosamente,\n` +
+      `Departamento de Segurança do Trabalho - BioSafety Caieiras`
+    );
+    
+    window.location.href = `mailto:${provider.contactEmail}?subject=${subject}&body=${body}`;
   };
 
   const selectedEmployee = React.useMemo(() => {
@@ -74,8 +120,8 @@ const App: React.FC = () => {
     if (loading && activeTab !== 'settings') {
       return (
         <div className="flex flex-col items-center justify-center min-h-[400px] text-emerald-500">
-          <Loader2 className="w-12 h-12 animate-spin mb-4" />
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs animate-pulse">Sincronizando com Supabase...</p>
+          <Loader2 className="w-12 h-12 animate-spin mb-4 text-emerald-500" />
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs animate-pulse">Sincronizando Dados...</p>
         </div>
       );
     }
@@ -87,7 +133,7 @@ const App: React.FC = () => {
           <h2 className="text-xl font-black text-white mb-2 uppercase tracking-tight">Erro de Conexão</h2>
           <p className="text-slate-400 max-w-md mb-6 text-sm">{error}</p>
           <button onClick={fetchData} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-8 py-3 rounded-xl transition-all font-black text-xs uppercase tracking-widest">
-            <RefreshCcw className="w-4 h-4" /> Tentar Novamente
+            <RefreshCcw className="w-4 h-4 text-white" /> Tentar Novamente
           </button>
         </div>
       );
@@ -95,13 +141,17 @@ const App: React.FC = () => {
 
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard providers={providers} />;
+        return <Dashboard providers={providers} onProviderClick={handleDashboardProviderClick} />;
       case 'providers':
         return (
           <ProviderList 
             providers={providers} 
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
             onAddProvider={() => setIsAddProviderOpen(true)}
+            onEditProvider={handleEditProvider}
             onViewEmployee={(emp) => setSelectedEmployeeId(emp.id)}
+            onEditEmployee={handleEditEmployee}
             onRefresh={handleRefresh}
           />
         );
@@ -110,33 +160,45 @@ const App: React.FC = () => {
       case 'settings':
         return <Settings />;
       case 'alerts':
-        const expiredDocs = providers.flatMap(p => p.employees || []).flatMap(e => (e.documents || []).filter(d => d.status === 'EXPIRED'));
+        const expiredAlerts = providers.flatMap(p => 
+          (p.employees || []).flatMap(e => 
+            (e.documents || [])
+              .filter(d => d.status === 'EXPIRED')
+              .map(d => ({ provider: p, employee: e, doc: d }))
+          )
+        );
+
         return (
-          <div className="bg-slate-900 p-12 rounded-[2.5rem] border border-slate-800 text-center space-y-6">
+          <div className="bg-slate-900 p-12 rounded-[2.5rem] border border-slate-800 text-center space-y-6 animate-in fade-in duration-500">
             <div className="bg-red-500/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto text-red-500 border border-red-500/20">
-              <span className="text-4xl font-black">!</span>
+              <span className="text-4xl font-black text-white">!</span>
             </div>
             <div>
               <h2 className="text-3xl font-black text-white uppercase tracking-tight">Alertas de Segurança</h2>
-              <p className="text-slate-500 mt-2 font-medium">Documentos expirados que exigem atenção imediata.</p>
+              <p className="text-slate-500 mt-2 font-medium">Documentos expirados que exigem atenção imediata do Técnico.</p>
             </div>
             
-            <div className="pt-8 grid gap-4 max-w-3xl mx-auto">
-              {expiredDocs.length > 0 ? (
-                expiredDocs.map((d, i) => (
-                  <div key={i} className="flex items-center justify-between p-6 bg-slate-950 border border-red-900/20 rounded-2xl text-left group hover:border-red-500/40 transition-all">
-                    <div>
-                      <p className="font-black text-red-400 uppercase text-[10px] tracking-widest">{d.type} EXPIRADO</p>
-                      <p className="text-slate-200 font-bold text-xl mt-1">Vencimento: {new Date(d.expiryDate).toLocaleDateString('pt-BR')}</p>
+            <div className="pt-8 grid gap-4 max-w-4xl mx-auto">
+              {expiredAlerts.length > 0 ? (
+                expiredAlerts.map((alert, i) => (
+                  <div key={i} className="flex flex-col md:flex-row items-center justify-between p-6 bg-slate-950 border border-red-900/20 rounded-2xl text-left group hover:border-red-500/40 transition-all gap-4">
+                    <div className="flex-1">
+                      <p className="font-black text-red-400 uppercase text-[10px] tracking-widest">{alert.doc.type} EXPIRADO</p>
+                      <p className="text-slate-200 font-bold text-lg mt-1">{alert.employee.name}</p>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-tight">{alert.provider.name} • Vencimento: {new Date(alert.doc.expiryDate).toLocaleDateString('pt-BR')}</p>
                     </div>
-                    <button className="bg-red-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-red-900/20">
-                      Notificar Empresa
+                    <button 
+                      onClick={() => handleNotifyCompany(alert.provider, alert.employee, alert.doc)}
+                      className="w-full md:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-red-900/20 active:scale-95"
+                    >
+                      <Mail className="w-4 h-4 text-white" />
+                      Notificar Empresa via E-mail
                     </button>
                   </div>
                 ))
               ) : (
                 <div className="text-emerald-500 bg-emerald-500/5 p-12 rounded-[2rem] border border-emerald-500/20 font-black uppercase tracking-widest text-sm">
-                  Protocolo em conformidade. Nenhum vencimento crítico.
+                  Protocolo em conformidade. Nenhum vencimento crítico detectado.
                 </div>
               )}
             </div>
@@ -148,7 +210,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} userEmail={userEmail}>
+    <Layout 
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab} 
+      onLogout={handleLogout} 
+      userEmail={userEmail}
+      userName={userName}
+    >
       {renderContent()}
       
       {selectedEmployeeId && (
@@ -161,9 +229,22 @@ const App: React.FC = () => {
       
       <AddProviderModal 
         isOpen={isAddProviderOpen}
-        onClose={() => setIsAddProviderOpen(false)}
+        providerToEdit={providerToEdit}
+        onClose={handleCloseProviderModal}
         onSuccess={() => {
-          setIsAddProviderOpen(false);
+          handleCloseProviderModal();
+          handleRefresh();
+        }}
+      />
+
+      <AddEmployeeModal
+        isOpen={!!employeeToEdit}
+        providerId={employeeToEdit?.providerId || ''}
+        providerName={employeeToEdit?.providerName || ''}
+        employeeToEdit={employeeToEdit?.employee}
+        onClose={() => setEmployeeToEdit(null)}
+        onSuccess={() => {
+          setEmployeeToEdit(null);
           handleRefresh();
         }}
       />

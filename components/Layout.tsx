@@ -8,9 +8,10 @@ interface LayoutProps {
   setActiveTab: (tab: string) => void;
   onLogout: () => void;
   userEmail: string;
+  userName: string;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout, userEmail }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLogout, userEmail, userName }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'providers', label: 'Prestadores', icon: Users },
@@ -18,6 +19,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
     { id: 'users', label: 'Gestão de Usuários', icon: UserCog },
     { id: 'settings', label: 'Configurações', icon: Settings },
   ];
+
+  // Extrai apenas o primeiro nome para uma saudação mais direta no menu
+  const firstName = userName?.split(' ')[0] || 'Usuário';
 
   return (
     <div className="flex h-screen bg-slate-950 text-slate-200 overflow-hidden">
@@ -54,10 +58,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
 
         <div className="p-6 border-t border-slate-800">
           <div className="bg-slate-800/40 p-4 rounded-2xl mb-4 border border-slate-700/50">
-            <p className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-black">Operador Logado</p>
-            <div className="flex items-center gap-2 text-slate-200 truncate">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              <p className="text-[10px] font-bold truncate">{userEmail}</p>
+            <p className="text-[9px] text-emerald-500 mb-2 uppercase tracking-[0.2em] font-black flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Tecnico online
+            </p>
+            <div className="text-slate-200 truncate space-y-0.5">
+              <p className="text-xs font-black uppercase tracking-tight">{firstName}</p>
+              <p className="text-[10px] text-slate-500 font-bold truncate">{userEmail}</p>
             </div>
           </div>
           <button 
@@ -78,10 +85,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
             <h1 className="text-xs font-black text-white uppercase tracking-[0.3em]">
               {navItems.find(i => i.id === activeTab)?.label}
             </h1>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            {/* Elementos de identificação e ícone removidos conforme solicitação */}
           </div>
         </header>
         <div className="p-10 max-w-7xl mx-auto">

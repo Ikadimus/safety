@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Shield, FileCheck, Download, Plus, Calendar, Edit2, Trash2, Loader2 } from 'lucide-react';
+import { X, Shield, FileCheck, Plus, Calendar, Trash2, Loader2 } from 'lucide-react';
 import { Employee } from '../types';
 import AddDocumentModal from './AddDocumentModal';
 import { dbService } from '../services/dbService';
@@ -42,14 +42,14 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ employee, onClose, onRefr
                 <Shield className="w-12 h-12 text-emerald-200" />
               </div>
               <div>
-                <h2 className="text-3xl font-black tracking-tight">{employee.name}</h2>
+                <h2 className="text-3xl font-black tracking-tight text-white">{employee.name}</h2>
                 <p className="text-emerald-100 font-bold uppercase tracking-widest text-xs mt-1">
                   {employee.role} • <span className="text-white">CPF: {employee.cpf}</span>
                 </p>
               </div>
             </div>
             <button onClick={onClose} className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all">
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6 text-white" />
             </button>
           </div>
 
@@ -63,7 +63,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ employee, onClose, onRefr
                 onClick={() => setIsAddingDoc(true)}
                 className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/40"
               >
-                <Plus className="w-4 h-4" /> Lançar NR / Curso
+                <Plus className="w-4 h-4 text-white" /> Lançar NR / Curso
               </button>
             </div>
 
@@ -71,11 +71,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ employee, onClose, onRefr
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-slate-800">
-                    <th className="pb-4 font-black text-slate-600 text-[10px] uppercase tracking-[0.2em]">Treinamento / Certificação</th>
-                    <th className="pb-4 font-black text-slate-600 text-[10px] uppercase tracking-[0.2em]">Conclusão</th>
-                    <th className="pb-4 font-black text-slate-600 text-[10px] uppercase tracking-[0.2em]">Vencimento</th>
-                    <th className="pb-4 font-black text-slate-600 text-[10px] uppercase tracking-[0.2em]">Situação</th>
-                    <th className="pb-4 font-black text-slate-600 text-[10px] uppercase tracking-[0.2em] text-right">Ação</th>
+                    <th className="pb-4 font-black text-slate-500 text-[10px] uppercase tracking-[0.2em]">Treinamento / Certificação</th>
+                    <th className="pb-4 font-black text-slate-500 text-[10px] uppercase tracking-[0.2em]">Conclusão</th>
+                    <th className="pb-4 font-black text-slate-500 text-[10px] uppercase tracking-[0.2em]">Vencimento</th>
+                    <th className="pb-4 font-black text-slate-500 text-[10px] uppercase tracking-[0.2em]">Situação</th>
+                    <th className="pb-4 font-black text-slate-500 text-[10px] uppercase tracking-[0.2em] text-right">Ação</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
@@ -91,9 +91,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ employee, onClose, onRefr
                       </td>
                       <td className="py-5 text-slate-400 text-sm font-medium">{new Date(doc.issueDate).toLocaleDateString('pt-BR')}</td>
                       <td className="py-5">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-3 h-3 text-slate-600" />
-                          <span className="text-slate-200 text-sm font-bold">{new Date(doc.expiryDate).toLocaleDateString('pt-BR')}</span>
+                        <div className="flex items-center gap-2 text-white">
+                          <Calendar className="w-4 h-4 text-white" />
+                          <span className="text-white text-sm font-bold">{new Date(doc.expiryDate).toLocaleDateString('pt-BR')}</span>
                         </div>
                       </td>
                       <td className="py-5">
@@ -110,9 +110,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ employee, onClose, onRefr
                           <button 
                             disabled={deletingId === doc.id}
                             onClick={() => handleDeleteDoc(doc.id, doc.type)}
-                            className="p-2 text-slate-600 hover:text-red-500 transition-all hover:bg-red-500/10 rounded-lg disabled:opacity-50"
+                            className="p-2 text-white hover:text-red-500 transition-all hover:bg-red-500/10 rounded-lg disabled:opacity-50"
                           >
-                            {deletingId === doc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            {deletingId === doc.id ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Trash2 className="w-4 h-4 text-white" />}
                           </button>
                         </div>
                       </td>
@@ -128,7 +128,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ employee, onClose, onRefr
           </div>
 
           <div className="p-8 bg-slate-800/50 border-t border-slate-800 flex justify-end gap-4">
-             <button onClick={onClose} className="px-8 py-3 bg-slate-900 border border-slate-700 text-slate-400 rounded-xl font-bold text-xs uppercase tracking-widest hover:text-white hover:border-slate-500 transition-all">
+             <button onClick={onClose} className="px-8 py-3 bg-slate-900 border border-slate-700 text-slate-300 rounded-xl font-bold text-xs uppercase tracking-widest hover:text-white hover:border-slate-500 transition-all">
                Fechar
              </button>
           </div>

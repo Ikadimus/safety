@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { Cpu, Fingerprint, Mail, Loader2, ShieldCheck } from 'lucide-react';
+import { Mail, Loader2, ShieldCheck } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface LoginProps {
-  onLogin: (email: string) => void;
+  onLogin: (email: string, name: string) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -12,20 +13,41 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Mock de autenticação solicitado
-    setTimeout(() => {
-      if (email === 'efilho@essencisbiometano.com.br' && password === '123') {
-        onLogin(email);
+    try {
+      // Busca o usuário no banco de dados real
+      const { data, error: dbError } = await supabase
+        .from('app_users')
+        .select('name, email, password')
+        .eq('email', email)
+        .eq('password', password)
+        .single();
+
+      if (data) {
+        // Se encontrar no banco, usa o nome cadastrado
+        onLogin(data.email, data.name);
       } else {
-        setError('CHAVE DE SEGURANÇA INVÁLIDA');
+        // Fallback apenas para a conta mestre de desenvolvimento
+        if (email === 'efilho@essencisbiometano.com.br' && password === '123') {
+          onLogin(email, "Evaldo");
+        } else {
+          setError('CHAVE DE SEGURANÇA OU USUÁRIO INVÁLIDO');
+          setLoading(false);
+        }
+      }
+    } catch (err) {
+      // Erro de conexão ou usuário não encontrado
+      if (email === 'efilho@essencisbiometano.com.br' && password === '123') {
+        onLogin(email, "Evaldo");
+      } else {
+        setError('ACESSO NEGADO: CREDENCIAIS NÃO RECONHECIDAS');
         setLoading(false);
       }
-    }, 1000);
+    }
   };
 
   return (
@@ -62,7 +84,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           <form onSubmit={handleLogin} className="space-y-6 text-left">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">IDENTIFICAÇÃO (E-MAIL)</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 text-slate-400">IDENTIFICAÇÃO (E-MAIL)</label>
               <div className="relative group">
                 <input 
                   type="email"
@@ -77,7 +99,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">SENHA DE ACESSO</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 text-slate-400">SENHA DE ACESSO</label>
               <div className="relative group">
                 <input 
                   type="password"

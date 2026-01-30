@@ -4,6 +4,10 @@ import { Provider, Employee, Document, DocStatus, ProviderStatus } from '../type
 
 export const dbService = {
   async getFullProvidersData(): Promise<Provider[]> {
+    // Busca o período de alerta configurado (padrão 30 dias)
+    const savedPeriod = localStorage.getItem('biosafety_alert_period');
+    const alertThreshold = savedPeriod ? parseInt(savedPeriod, 10) : 30;
+
     const { data, error } = await supabase
       .from('providers')
       .select(`
@@ -15,10 +19,7 @@ export const dbService = {
       `)
       .order('name');
 
-    if (error) {
-      console.error('Erro ao buscar dados do Supabase:', error);
-      throw error;
-    }
+    if (error) throw error;
 
     return (data || []).map((p: any) => ({
       ...p,
@@ -30,11 +31,20 @@ export const dbService = {
           const expiryDateStr = d.expiry_date || d.expiryDate;
           const expiryDate = expiryDateStr ? new Date(expiryDateStr) : new Date();
           const today = new Date();
-          const diffDays = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Resetar horas para comparação pura de dias
+          today.setHours(0, 0, 0, 0);
+          expiryDate.setHours(0, 0, 0, 0);
+
+          const diffTime = expiryDate.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           
           let status: DocStatus = DocStatus.VALID;
-          if (diffDays < 0) status = DocStatus.EXPIRED;
-          else if (diffDays <= 30) status = DocStatus.EXPIRING;
+          if (diffDays < 0) {
+            status = DocStatus.EXPIRED;
+          } else if (diffDays <= alertThreshold) {
+            status = DocStatus.EXPIRING;
+          }
 
           return {
             id: d.id,
@@ -55,9 +65,26 @@ export const dbService = {
       .from('providers')
       .insert([provider])
       .select();
-    
     if (error) throw error;
     return data[0];
+  },
+
+  async updateProvider(id: string, updates: { name: string, cnpj: string, contact_email: string }) {
+    const { data, error } = await supabase
+      .from('providers')
+      .update(updates)
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async deleteProvider(id: string) {
+    const { error } = await supabase
+      .from('providers')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   },
 
   async createEmployee(employee: { name: string, cpf: string, role: string, provider_id: string }) {
@@ -65,9 +92,26 @@ export const dbService = {
       .from('employees')
       .insert([employee])
       .select();
-
     if (error) throw error;
     return data[0];
+  },
+
+  async updateEmployee(id: string, updates: { name: string, cpf: string, role: string }) {
+    const { data, error } = await supabase
+      .from('employees')
+      .update(updates)
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async deleteEmployee(id: string) {
+    const { error } = await supabase
+      .from('employees')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   },
 
   async createDocument(document: { employee_id: string, type: string, issue_date: string, expiry_date: string }) {
@@ -75,55 +119,32 @@ export const dbService = {
       .from('documents')
       .insert([document])
       .select();
-
     if (error) throw error;
     return data[0];
   },
 
   async deleteDocument(id: string) {
-    const { error } = await supabase
-      .from('documents')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('documents').delete().eq('id', id);
     if (error) throw error;
   },
 
   async getTrainingTypes(): Promise<string[]> {
     try {
-      const { data, error } = await supabase
-        .from('training_types')
-        .select('name')
-        .order('name');
-      
+      const { data, error } = await supabase.from('training_types').select('name').order('name');
       if (error || !data) throw error;
       return data.map((t: any) => t.name);
-    } catch (err) {
-      return [
-        'NR-01 (Integração)', 
-        'NR-06 (EPI)', 
-        'NR-10 (Elétrica)', 
-        'NR-13 (Pressão)',
-        'NR-20 (Inflamáveis)',
-        'NR-33 (Confinado)', 
-        'NR-35 (Altura)', 
-        'ASO', 
-        'Detectores H2S'
-      ];
+    } catch {
+      return ['NR-01', 'NR-06', 'NR-10', 'NR-20', 'NR-33', 'NR-35', 'ASO'];
     }
   },
 
   async addTrainingType(name: string) {
-    const { error } = await supabase
-      .from('training_types')
-      .insert([{ name }]);
+    const { error } = await supabase.from('training_types').insert([{ name }]);
     if (error) throw error;
   },
 
   async deleteTrainingType(name: string) {
-    const { error } = await supabase
-      .from('training_types')
-      .delete()
-      .eq('name', name);
+    const { error } = await supabase.from('training_types').delete().eq('name', name);
     if (error) throw error;
   }
 };

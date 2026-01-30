@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Users, FileX, Clock, CheckCircle2, Factory, TrendingUp, Zap, ShieldAlert } from 'lucide-react';
+import { Users, FileX, Clock, CheckCircle2, Factory, TrendingUp, Zap, ShieldAlert, ChevronRight } from 'lucide-react';
 import { Provider } from '../types';
 
 interface DashboardProps {
   providers: Provider[];
+  onProviderClick: (providerName: string) => void;
 }
 
 const SAFETY_TIPS = [
@@ -15,7 +16,7 @@ const SAFETY_TIPS = [
   },
   {
     title: "Atmosferas Explosivas",
-    content: "A purificação de biogás envolve zonas EX. Verifique se as ferramentas e lanternas dos prestadores possuem certificação Intrínseca.",
+    content: "A purificação de biog biogas envolve zonas EX. Verifique se as ferramentas e lanternas dos prestadores possuem certificação Intrínseca.",
     footer: "Segurança NR-20"
   },
   {
@@ -35,12 +36,16 @@ const SAFETY_TIPS = [
   }
 ];
 
-const Dashboard: React.FC<DashboardProps> = ({ providers }) => {
+const Dashboard: React.FC<DashboardProps> = ({ providers, onProviderClick }) => {
   const [currentTip, setCurrentTip] = useState(SAFETY_TIPS[0]);
+  const [alertPeriod, setAlertPeriod] = useState(30);
 
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * SAFETY_TIPS.length);
     setCurrentTip(SAFETY_TIPS[randomIndex]);
+    
+    const saved = localStorage.getItem('biosafety_alert_period');
+    if (saved) setAlertPeriod(parseInt(saved, 10));
   }, []);
 
   const stats = React.useMemo(() => {
@@ -49,9 +54,9 @@ const Dashboard: React.FC<DashboardProps> = ({ providers }) => {
     let expiring = 0;
     
     providers.forEach(p => {
-      p.employees.forEach(e => {
+      (p.employees || []).forEach(e => {
         totalEmployees++;
-        e.documents.forEach(d => {
+        (e.documents || []).forEach(d => {
           if (d.status === 'EXPIRED') expired++;
           if (d.status === 'EXPIRING') expiring++;
         });
@@ -65,7 +70,7 @@ const Dashboard: React.FC<DashboardProps> = ({ providers }) => {
     { label: 'Fornecedores', value: providers.length, icon: Factory, color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { label: 'Colaboradores', value: stats.totalEmployees, icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     { label: 'Docs Vencidos', value: stats.expired, icon: FileX, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: 'A Vencer (30d)', value: stats.expiring, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { label: `A Vencer (${alertPeriod}d)`, value: stats.expiring, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
   ];
 
   return (
@@ -99,12 +104,21 @@ const Dashboard: React.FC<DashboardProps> = ({ providers }) => {
           </h3>
           <div className="space-y-4">
             {providers.map(p => {
-              const expiredCount = p.employees.reduce((acc, emp) => acc + emp.documents.filter(d => d.status === 'EXPIRED').length, 0);
+              const expiredCount = (p.employees || []).reduce((acc, emp) => acc + (emp.documents || []).filter(d => d.status === 'EXPIRED').length, 0);
               return (
-                <div key={p.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-800 hover:bg-slate-800/50 transition-colors">
-                  <div>
-                    <p className="font-bold text-slate-200">{p.name}</p>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{p.cnpj}</p>
+                <div 
+                  key={p.id} 
+                  onClick={() => onProviderClick(p.name)}
+                  className="flex items-center justify-between p-4 rounded-xl border border-slate-800 hover:bg-slate-800/80 hover:border-emerald-500/30 transition-all cursor-pointer group active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-slate-950 rounded-lg flex items-center justify-center border border-slate-800 group-hover:border-emerald-500/20">
+                      <Factory className="w-5 h-5 text-slate-500 group-hover:text-emerald-500 transition-colors" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-200 group-hover:text-white transition-colors">{p.name}</p>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{p.cnpj}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">
@@ -118,6 +132,7 @@ const Dashboard: React.FC<DashboardProps> = ({ providers }) => {
                         ></div>
                       </div>
                     </div>
+                    <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-emerald-500 transition-colors" />
                   </div>
                 </div>
               );
