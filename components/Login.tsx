@@ -8,7 +8,7 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('efilho@essencisbiometano.com.br');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -49,6 +49,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
     }
   };
+
+  const inputClasses = "w-full bg-[#f0f5ff] border-none rounded-xl px-5 py-3.5 text-slate-900 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-sm placeholder:text-slate-400 placeholder:font-normal";
 
   return (
     <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -91,8 +93,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#f0f5ff] border-none rounded-xl px-5 py-3.5 text-slate-900 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-sm"
-                  placeholder="usuario@dominio.com.br"
+                  className={inputClasses}
+                  placeholder="digite aqui seu email"
                 />
                 <Mail className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
               </div>
@@ -106,8 +108,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#f0f5ff] border-none rounded-xl px-5 py-3.5 text-slate-900 focus:ring-4 focus:ring-emerald-500/20 transition-all font-black text-lg tracking-widest"
-                  placeholder="•••"
+                  className={inputClasses}
+                  placeholder="digite aqui sua senha"
                 />
                 <ShieldCheck className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
               </div>
