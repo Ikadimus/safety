@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Trash2, ShieldCheck, Mail, Loader2, Key, Eye, EyeOff } from 'lucide-react';
-import { dbService } from '../services/dbService';
+import { supabase } from '../lib/supabase';
 import { AppUser } from '../types';
 
 const UserAdmin: React.FC = () => {
@@ -14,10 +14,11 @@ const UserAdmin: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await (window as any).supabase.from('app_users').select('*');
-      if (!error) setUsers(data || []);
+      const { data, error } = await supabase.from('app_users').select('*');
+      if (error) throw error;
+      setUsers(data || []);
     } catch (err) {
-      console.error(err);
+      console.error('Erro ao buscar usuários:', err);
     } finally {
       setLoading(false);
     }
@@ -30,7 +31,7 @@ const UserAdmin: React.FC = () => {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await (window as any).supabase.from('app_users').insert([{
+      const { error } = await supabase.from('app_users').insert([{
         ...newUserData,
         role: 'OPERATOR'
       }]);
@@ -38,18 +39,18 @@ const UserAdmin: React.FC = () => {
       setIsAdding(false);
       setNewUserData({ name: '', email: '', password: '' });
       fetchUsers();
-    } catch (err) {
-      alert("Erro ao cadastrar usuário.");
+    } catch (err: any) {
+      alert(`Erro ao cadastrar: ${err.message || 'Verifique se a tabela app_users existe no Supabase.'}`);
     }
   };
 
   const handleDeleteUser = async (id: string) => {
     if (!confirm("Remover acesso deste usuário?")) return;
     try {
-      await (window as any).supabase.from('app_users').delete().eq('id', id);
+      await supabase.from('app_users').delete().eq('id', id);
       fetchUsers();
     } catch (err) {
-      alert("Erro ao remover.");
+      alert("Erro ao remover usuário.");
     }
   };
 

@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { X, Shield, FileCheck, Download, Plus, Calendar, Edit2, Trash2 } from 'lucide-react';
+import { X, Shield, FileCheck, Download, Plus, Calendar, Edit2, Trash2, Loader2 } from 'lucide-react';
 import { Employee } from '../types';
 import AddDocumentModal from './AddDocumentModal';
+import { dbService } from '../services/dbService';
 
 interface EmployeeModalProps {
   employee: Employee | null;
@@ -12,8 +13,24 @@ interface EmployeeModalProps {
 
 const EmployeeModal: React.FC<EmployeeModalProps> = ({ employee, onClose, onRefresh }) => {
   const [isAddingDoc, setIsAddingDoc] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (!employee) return null;
+
+  const handleDeleteDoc = async (docId: string, type: string) => {
+    if (!confirm(`Tem certeza que deseja excluir o registro de ${type}?`)) return;
+    
+    setDeletingId(docId);
+    try {
+      await dbService.deleteDocument(docId);
+      onRefresh();
+    } catch (err) {
+      alert("Erro ao excluir documento.");
+      console.error(err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <>
@@ -90,11 +107,12 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ employee, onClose, onRefr
                       </td>
                       <td className="py-5 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button className="p-2 text-slate-600 hover:text-blue-400 transition-all hover:bg-blue-500/10 rounded-lg" title="Editar Certificado">
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-slate-600 hover:text-red-500 transition-all hover:bg-red-500/10 rounded-lg" title="Excluir Registro">
-                            <Trash2 className="w-4 h-4" />
+                          <button 
+                            disabled={deletingId === doc.id}
+                            onClick={() => handleDeleteDoc(doc.id, doc.type)}
+                            className="p-2 text-slate-600 hover:text-red-500 transition-all hover:bg-red-500/10 rounded-lg disabled:opacity-50"
+                          >
+                            {deletingId === doc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                           </button>
                         </div>
                       </td>

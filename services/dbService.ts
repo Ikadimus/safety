@@ -80,6 +80,14 @@ export const dbService = {
     return data[0];
   },
 
+  async deleteDocument(id: string) {
+    const { error } = await supabase
+      .from('documents')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  },
+
   async getTrainingTypes(): Promise<string[]> {
     try {
       const { data, error } = await supabase
@@ -90,7 +98,6 @@ export const dbService = {
       if (error || !data) throw error;
       return data.map((t: any) => t.name);
     } catch (err) {
-      console.warn("Usando lista padrão de NRs para Biometano.");
       return [
         'NR-01 (Integração)', 
         'NR-06 (EPI)', 
