@@ -1,8 +1,7 @@
 
 import React, { useState } from 'react';
-import { Plus, Search, UserPlus, Bot, ShieldCheck, Edit2, Trash2, Loader2, ClipboardCheck, XCircle, Zap, ShieldAlert } from 'lucide-react';
+import { Plus, Search, UserPlus, ShieldCheck, Edit2, Trash2, XCircle } from 'lucide-react';
 import { Provider, Employee } from '../types';
-import { analyzeEmployeeCompliance, analyzeProviderCapability } from '../services/geminiService';
 import { dbService } from '../services/dbService';
 import AddEmployeeModal from './AddEmployeeModal';
 
@@ -27,26 +26,7 @@ const ProviderList: React.FC<ProviderListProps> = ({
   onEditEmployee, 
   onRefresh 
 }) => {
-  const [providerAnalysis, setProviderAnalysis] = useState<Record<string, string>>({});
-  const [employeeAnalysis, setEmployeeAnalysis] = useState<Record<string, string>>({});
-  const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set());
   const [activeAddEmployee, setActiveAddEmployee] = useState<{id: string, name: string} | null>(null);
-
-  // Função para formatar o texto da IA: tópicos entre ** ficam em negrito e vermelho
-  const formatAiResponse = (text: string) => {
-    if (!text) return null;
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return (
-          <span key={i} className="font-black text-red-500 uppercase tracking-tight">
-            {part.replace(/\*\*/g, '')}
-          </span>
-        );
-      }
-      return <span key={i}>{part}</span>;
-    });
-  };
 
   const filteredProviders = providers.filter(p => {
     const term = searchTerm.toLowerCase().trim();
@@ -71,31 +51,6 @@ const ProviderList: React.FC<ProviderListProps> = ({
 
     return employeeMatches;
   });
-
-  const handleProviderAnalysis = async (provider: Provider) => {
-    setAnalyzingIds(prev => new Set(prev).add(provider.id));
-    const allDocs = provider.employees?.flatMap(e => e.documents?.map(d => d.type)).filter((v, i, a) => a.indexOf(v) === i).join(', ') || 'Nenhum documento';
-    const result = await analyzeProviderCapability(provider.name, `Lista de NRs disponíveis na equipe: ${allDocs}`);
-    setProviderAnalysis(prev => ({ ...prev, [provider.id]: result }));
-    setAnalyzingIds(prev => {
-      const next = new Set(prev);
-      next.delete(provider.id);
-      return next;
-    });
-  };
-
-  const handleEmployeeAnalysis = async (e: React.MouseEvent, employee: Employee) => {
-    e.stopPropagation();
-    setAnalyzingIds(prev => new Set(prev).add(employee.id));
-    const docsStr = employee.documents?.map(d => `${d.type} (${d.status === 'VALID' ? 'Válido' : 'Vencido'})`).join(', ') || 'Sem documentos';
-    const result = await analyzeEmployeeCompliance(employee.name, employee.role, docsStr);
-    setEmployeeAnalysis(prev => ({ ...prev, [employee.id]: result }));
-    setAnalyzingIds(prev => {
-      const next = new Set(prev);
-      next.delete(employee.id);
-      return next;
-    });
-  };
 
   const handleDeleteProvider = async (id: string, name: string) => {
     if (!confirm(`Deseja remover permanentemente o prestador ${name}?`)) return;
@@ -156,14 +111,6 @@ const ProviderList: React.FC<ProviderListProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => handleProviderAnalysis(provider)}
-                  disabled={analyzingIds.has(provider.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all border ${analyzingIds.has(provider.id) ? 'bg-slate-800 text-slate-500 border-slate-700' : 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500 hover:text-white'}`}
-                >
-                  {analyzingIds.has(provider.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardCheck className="w-4 h-4" />}
-                  <span className="text-[10px] font-black uppercase tracking-widest">Mapa de Competências</span>
-                </button>
                 <button onClick={() => onEditProvider(provider)} className="p-2 text-white hover:bg-slate-800 rounded-lg transition-colors">
                   <Edit2 className="w-4 h-4" />
                 </button>
@@ -172,19 +119,6 @@ const ProviderList: React.FC<ProviderListProps> = ({
                 </button>
               </div>
             </div>
-
-            {/* Mapa de Competências IA (Prestadora) */}
-            {providerAnalysis[provider.id] && (
-              <div className="mx-6 mt-4 p-5 bg-blue-500/5 border border-blue-500/10 rounded-2xl animate-in fade-in slide-in-from-top-1">
-                <div className="flex items-center gap-2 mb-3">
-                  <Zap className="w-3 h-3 text-blue-400" />
-                  <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Portfólio Técnico Consolidado</span>
-                </div>
-                <div className="text-xs text-slate-400 leading-relaxed">
-                  {formatAiResponse(providerAnalysis[provider.id])}
-                </div>
-              </div>
-            )}
 
             {/* Quadro de Colaboradores */}
             <div className="p-6">
@@ -219,31 +153,10 @@ const ProviderList: React.FC<ProviderListProps> = ({
                           <p className="text-[10px] text-slate-500 font-black uppercase tracking-tighter">{employee.role}</p>
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={(e) => handleEmployeeAnalysis(e, employee)}
-                            disabled={analyzingIds.has(employee.id)}
-                            className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500 rounded-lg text-emerald-500 hover:text-white border border-emerald-500/20 transition-all"
-                            title="Parecer de Segurança IA"
-                          >
-                            {analyzingIds.has(employee.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bot className="w-3.5 h-3.5" />}
-                          </button>
                           <button onClick={(e) => { e.stopPropagation(); onEditEmployee(provider.id, provider.name, employee); }} className="p-1.5 bg-slate-800 hover:bg-blue-600 rounded-lg text-white transition-all"><Edit2 className="w-3.5 h-3.5" /></button>
                           <button onClick={(e) => handleDeleteEmployee(e, employee.id, employee.name)} className="p-1.5 bg-slate-800 hover:bg-red-600 rounded-lg text-white transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
-
-                      {/* Parecer Individual IA */}
-                      {employeeAnalysis[employee.id] && (
-                        <div className="mb-4 p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl animate-in zoom-in-95">
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <ShieldAlert className="w-3 h-3 text-emerald-400" />
-                            <span className="text-[8px] font-black text-emerald-400 uppercase">Parecer Individual</span>
-                          </div>
-                          <div className="text-[10px] text-slate-300 leading-tight italic whitespace-pre-wrap">
-                            {formatAiResponse(employeeAnalysis[employee.id])}
-                          </div>
-                        </div>
-                      )}
 
                       <div className="flex flex-wrap gap-1">
                         {employee.documents?.map(doc => (
