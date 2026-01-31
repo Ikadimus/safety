@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import ProviderList from './components/ProviderList';
+import ExecutiveView from './components/ExecutiveView';
 import EmployeeModal from './components/EmployeeModal';
 import AddProviderModal from './components/AddProviderModal';
 import AddEmployeeModal from './components/AddEmployeeModal';
@@ -23,10 +24,7 @@ const App: React.FC = () => {
   const [isAddProviderOpen, setIsAddProviderOpen] = useState(false);
   const [providerToEdit, setProviderToEdit] = useState<Provider | null>(null);
   
-  // Estado global de busca para permitir navegação cross-component
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Estado para edição de colaborador
   const [employeeToEdit, setEmployeeToEdit] = useState<{providerId: string, providerName: string, employee: Employee} | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -155,17 +153,31 @@ const App: React.FC = () => {
             onRefresh={handleRefresh}
           />
         );
+      case 'executive':
+        return <ExecutiveView providers={providers} onViewHistory={handleDashboardProviderClick} />;
       case 'users':
         return <UserAdmin />;
       case 'settings':
         return <Settings />;
       case 'alerts':
+        // LÓGICA DE ALERTA CORRIGIDA: Filtra apenas a versão MAIS RECENTE de cada tipo de documento
         const expiredAlerts = providers.flatMap(p => 
-          (p.employees || []).flatMap(e => 
-            (e.documents || [])
+          (p.employees || []).flatMap(e => {
+            const latestDocsByType = new Map<string, Document>();
+            
+            // Agrupa e mantém apenas o que tem o vencimento mais distante (o mais novo)
+            (e.documents || []).forEach(doc => {
+              const currentStored = latestDocsByType.get(doc.type);
+              if (!currentStored || new Date(doc.expiryDate) > new Date(currentStored.expiryDate)) {
+                latestDocsByType.set(doc.type, doc);
+              }
+            });
+
+            // Converte o mapa de volta para array e filtra os que estão vencidos
+            return Array.from(latestDocsByType.values())
               .filter(d => d.status === 'EXPIRED')
-              .map(d => ({ provider: p, employee: e, doc: d }))
-          )
+              .map(d => ({ provider: p, employee: e, doc: d }));
+          })
         );
 
         return (
@@ -175,7 +187,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <h2 className="text-3xl font-black text-white uppercase tracking-tight">Alertas de Segurança</h2>
-              <p className="text-slate-500 mt-2 font-medium">Documentos expirados que exigem atenção imediata do Técnico.</p>
+              <p className="text-slate-500 mt-2 font-medium">Somente documentos com validade expirada em sua versão mais atual são exibidos aqui.</p>
             </div>
             
             <div className="pt-8 grid gap-4 max-w-4xl mx-auto">
@@ -183,7 +195,7 @@ const App: React.FC = () => {
                 expiredAlerts.map((alert, i) => (
                   <div key={i} className="flex flex-col md:flex-row items-center justify-between p-6 bg-slate-950 border border-red-900/20 rounded-2xl text-left group hover:border-red-500/40 transition-all gap-4">
                     <div className="flex-1">
-                      <p className="font-black text-red-400 uppercase text-[10px] tracking-widest">{alert.doc.type} EXPIRADO</p>
+                      <p className="font-black text-red-400 uppercase text-[10px] tracking-widest">{alert.doc.type} EXPIRADO (VERSÃO ATUAL)</p>
                       <p className="text-slate-200 font-bold text-lg mt-1">{alert.employee.name}</p>
                       <p className="text-xs text-slate-500 font-bold uppercase tracking-tight">{alert.provider.name} • Vencimento: {new Date(alert.doc.expiryDate).toLocaleDateString('pt-BR')}</p>
                     </div>
@@ -198,7 +210,7 @@ const App: React.FC = () => {
                 ))
               ) : (
                 <div className="text-emerald-500 bg-emerald-500/5 p-12 rounded-[2rem] border border-emerald-500/20 font-black uppercase tracking-widest text-sm">
-                  Protocolo em conformidade. Nenhum vencimento crítico detectado.
+                  Sistema em conformidade. Todas as versões recentes dos documentos estão válidas.
                 </div>
               )}
             </div>

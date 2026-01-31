@@ -46,4 +46,6 @@ export interface Provider {
   status: ProviderStatus;
   employees: Employee[];
   contactEmail: string;
+  score?: number; // Calculado dinamicamente
+  isBlocked?: boolean; // Baseado no Score e criticidade
 }
