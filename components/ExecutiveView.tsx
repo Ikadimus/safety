@@ -107,7 +107,6 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ providers, onViewHistory 
       const criticalTypes = ['NR-33', 'NR-35', 'NR-10', 'NR-20', 'ASO'];
 
       (p.employees || []).forEach(emp => {
-        // Lógica de Documento Único (Pega o mais recente de cada tipo para o cálculo)
         const latestDocsByType = new Map<string, Document>();
         (emp.documents || []).forEach(doc => {
           const currentLatest = latestDocsByType.get(doc.type);
@@ -169,7 +168,7 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ providers, onViewHistory 
     { label: 'Conformidade Geral', value: `${Math.round(executiveStats.avgScore)}%`, icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
     { label: 'Prestadoras Bloqueadas', value: executiveStats.blockedCount, icon: Lock, color: 'text-red-500', bg: 'bg-red-500/10' },
     { label: 'Alertas Críticos', value: executiveStats.criticalAlerts, icon: AlertOctagon, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-    { label: 'Horas Bloqueadas (Est.)', value: '42h', icon: History, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Horas Bloqueadas (Est.)', value: '0h', icon: History, color: 'text-blue-500', bg: 'bg-blue-500/10' },
   ];
 
   return (
@@ -186,7 +185,7 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ providers, onViewHistory 
                 </div>
                 {i === 0 && (
                   <div className="text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded text-[8px] font-black flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" /> +2.4%
+                    <TrendingUp className="w-3 h-3" /> +0.0%
                   </div>
                 )}
               </div>
@@ -240,7 +239,7 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ providers, onViewHistory 
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {executiveStats.providersWithScore.map((p) => (
+                {executiveStats.providersWithScore.length > 0 ? executiveStats.providersWithScore.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-800/30 transition-colors group">
                     <td className="p-6">
                       <div className="flex items-center gap-4">
@@ -285,14 +284,18 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ providers, onViewHistory 
                        </button>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={4} className="p-10 text-center text-slate-500 text-sm italic">Nenhum dado de prestadora carregado no momento.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
 
         <div className="space-y-8">
-          {/* Gráfico de Tendência Mensal Evoluído */}
+          {/* Gráfico de Tendência Mensal Evoluído - ZERADO para início de operação */}
           <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl relative min-h-[350px] flex flex-col">
             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-8 flex items-center gap-1">
               <TrendingUp className="w-4 h-4 text-emerald-500 mr-1" />
@@ -301,7 +304,6 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ providers, onViewHistory 
             </h3>
             
             <div className="relative flex-1 flex">
-              {/* Eixo Y de Valores */}
               <div className="flex flex-col justify-between text-[8px] font-black text-slate-600 uppercase tracking-tighter pr-4 pb-8 h-[200px]">
                 <span>100%</span>
                 <span>75%</span>
@@ -311,16 +313,14 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ providers, onViewHistory 
               </div>
 
               <div className="relative flex-1 h-[200px]">
-                {/* Linhas de Grade (Grid Lines) */}
                 <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
                   {[0, 1, 2, 3, 4].map((i) => (
                     <div key={i} className="w-full h-[1px] bg-slate-800 border-t border-slate-800/40"></div>
                   ))}
                 </div>
 
-                {/* Barras do Gráfico */}
                 <div className="absolute inset-0 flex items-end justify-around px-4">
-                  {[42, 58, 65, 60, 78, 92].map((val, i) => (
+                  {[0, 0, 0, 0, 0, 0].map((val, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center gap-3 h-full justify-end group cursor-help max-w-[30px]">
                       <div 
                         className={`w-full rounded-t-lg transition-all duration-700 relative bg-gradient-to-t ${
@@ -346,7 +346,7 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ providers, onViewHistory 
                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Meta: 90%</span>
               </div>
-              <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">+14% vs M-1</span>
+              <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">+0% vs M-1</span>
             </div>
           </div>
 
@@ -370,16 +370,16 @@ const ExecutiveView: React.FC<ExecutiveViewProps> = ({ providers, onViewHistory 
                 </div>
              </div>
              <p className="text-slate-400 text-xs leading-relaxed">
-               Foram realizados 12 bloqueios automáticos nesta semana por falta de NR-33/35.
+               Nenhum bloqueio automático realizado nesta semana. Sistema em monitoramento preventivo.
              </p>
              <div className="mt-6 pt-6 border-t border-red-900/20 grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-[9px] text-slate-500 font-black uppercase">Negados</p>
-                  <p className="text-xl font-bold text-white">142</p>
+                  <p className="text-xl font-bold text-white">0</p>
                 </div>
                 <div>
                   <p className="text-[9px] text-slate-500 font-black uppercase">Diligência</p>
-                  <p className="text-xl font-bold text-emerald-500">98%</p>
+                  <p className="text-xl font-bold text-emerald-500">0%</p>
                 </div>
              </div>
           </div>
