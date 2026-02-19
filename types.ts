@@ -20,6 +20,13 @@ export interface AppUser {
   created_at?: string;
 }
 
+export interface TrainingType {
+  id: string;
+  name: string;
+  parent_id?: string | null;
+  created_at?: string;
+}
+
 export interface Document {
   id: string;
   type: string;
@@ -46,6 +53,4 @@ export interface Provider {
   status: ProviderStatus;
   employees: Employee[];
   contactEmail: string;
-  score?: number; // Calculado dinamicamente
-  isBlocked?: boolean; // Baseado no Score e criticidade
 }

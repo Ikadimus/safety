@@ -1,10 +1,9 @@
 
 import { supabase } from '../lib/supabase';
-import { Provider, Employee, Document, DocStatus, ProviderStatus } from '../types';
+import { Provider, Employee, Document, DocStatus, ProviderStatus, TrainingType } from '../types';
 
 export const dbService = {
   async getFullProvidersData(): Promise<Provider[]> {
-    // Busca o período de alerta configurado (padrão 30 dias)
     const savedPeriod = localStorage.getItem('biosafety_alert_period');
     const alertThreshold = savedPeriod ? parseInt(savedPeriod, 10) : 30;
 
@@ -32,7 +31,6 @@ export const dbService = {
           const expiryDate = expiryDateStr ? new Date(expiryDateStr) : new Date();
           const today = new Date();
           
-          // Resetar horas para comparação pura de dias
           today.setHours(0, 0, 0, 0);
           expiryDate.setHours(0, 0, 0, 0);
 
@@ -128,23 +126,49 @@ export const dbService = {
     if (error) throw error;
   },
 
-  async getTrainingTypes(): Promise<string[]> {
+  async getTrainingTypes(): Promise<TrainingType[]> {
     try {
-      const { data, error } = await supabase.from('training_types').select('name').order('name');
-      if (error || !data) throw error;
-      return data.map((t: any) => t.name);
+      const { data, error } = await supabase
+        .from('training_types')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data || [];
     } catch {
-      return ['NR-01', 'NR-06', 'NR-10', 'NR-20', 'NR-33', 'NR-35', 'ASO'];
+      return [
+        { id: '1', name: 'NR-01' },
+        { id: '2', name: 'NR-06' },
+        { id: '3', name: 'NR-10' },
+        { id: '4', name: 'NR-20' },
+        { id: '5', name: 'NR-33' },
+        { id: '6', name: 'NR-35' },
+        { id: '7', name: 'ASO' }
+      ];
     }
   },
 
-  async addTrainingType(name: string) {
-    const { error } = await supabase.from('training_types').insert([{ name }]);
+  async addTrainingType(name: string, parentId: string | null = null) {
+    const { data, error } = await supabase
+      .from('training_types')
+      .insert([{ name, parent_id: parentId }])
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async updateTrainingType(id: string, name: string) {
+    const { error } = await supabase
+      .from('training_types')
+      .update({ name })
+      .eq('id', id);
     if (error) throw error;
   },
 
-  async deleteTrainingType(name: string) {
-    const { error } = await supabase.from('training_types').delete().eq('name', name);
+  async deleteTrainingType(id: string) {
+    const { error } = await supabase
+      .from('training_types')
+      .delete()
+      .eq('id', id);
     if (error) throw error;
   }
 };
