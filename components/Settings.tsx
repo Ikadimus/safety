@@ -324,7 +324,7 @@ const Settings: React.FC = () => {
             <div>
               <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-2">Instrução de Hierarquia</p>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Utilize o botão <Plus className="w-3 h-3 inline text-emerald-500" /> para criar sub-níveis (Ex: NR-10 > Básico). Edite nomes diretamente clicando no ícone de lápis. A exclusão de um item pai removerá também seus níveis descendentes.
+                Utilize o botão <Plus className="w-3 h-3 inline text-emerald-500" /> para criar sub-níveis (Ex: NR-10 &gt; Básico). Edite nomes diretamente clicando no ícone de lápis. A exclusão de um item pai removerá também seus níveis descendentes.
               </p>
             </div>
           </div>
