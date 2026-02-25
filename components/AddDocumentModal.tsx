@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, FilePlus, Calendar, Loader2 } from 'lucide-react';
 import { dbService } from '../services/dbService';
-import { TrainingType } from '../types';
 
 interface AddDocumentModalProps {
   employeeId: string;
@@ -10,12 +9,13 @@ interface AddDocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  isVehicle?: boolean;
 }
 
-const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employeeName, isOpen, onClose, onSuccess }) => {
+const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employeeName, isOpen, onClose, onSuccess, isVehicle = false }) => {
   const [loading, setLoading] = useState(false);
   const [fetchingTypes, setFetchingTypes] = useState(true);
-  const [trainingTypes, setTrainingTypes] = useState<TrainingType[]>([]);
+  const [trainingTypes, setTrainingTypes] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     type: '',
     issue_date: '',
@@ -25,38 +25,39 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employe
   useEffect(() => {
     if (isOpen) {
       const loadTypes = async () => {
-        const types = await dbService.getTrainingTypes();
-        setTrainingTypes(types);
-        
-        // Tenta selecionar o primeiro tipo disponível (formata para string de exibição)
-        if (types.length > 0) {
-          const firstType = types[0];
-          const path = getPath(firstType, types);
-          setFormData(prev => ({ ...prev, type: path }));
+        if (isVehicle) {
+          const vehicleTypes = ['CRLV', 'ANTT', 'CIV', 'CIPP', 'Cronotacógrafo', 'Seguro Ambiental', 'Outro'];
+          setTrainingTypes(vehicleTypes);
+          setFormData(prev => ({ ...prev, type: vehicleTypes[0] }));
+        } else {
+          const types = await dbService.getTrainingTypes();
+          setTrainingTypes(types);
+          if (types.length > 0) setFormData(prev => ({ ...prev, type: types[0] }));
         }
         setFetchingTypes(false);
       };
       loadTypes();
     }
-  }, [isOpen]);
-
-  const getPath = (item: TrainingType, all: TrainingType[]): string => {
-    if (!item.parent_id) return item.name;
-    const parent = all.find(t => t.id === item.parent_id);
-    return parent ? `${getPath(parent, all)} › ${item.name}` : item.name;
-  };
+  }, [isOpen, isVehicle]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.type) return alert("Selecione um tipo de treinamento.");
+    if (!formData.type) return alert("Selecione um tipo de documento.");
     setLoading(true);
     try {
-      await dbService.createDocument({
-        ...formData,
-        employee_id: employeeId
-      });
+      if (isVehicle) {
+        await dbService.createVehicleDocument({
+          ...formData,
+          vehicle_id: employeeId
+        });
+      } else {
+        await dbService.createDocument({
+          ...formData,
+          employee_id: employeeId
+        });
+      }
       onSuccess();
       onClose();
     } catch (err) {
@@ -66,11 +67,6 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employe
       setLoading(false);
     }
   };
-
-  // Ordena os tipos para exibição no select (opcionalmente pode ser por path completo)
-  const sortedTypes = [...trainingTypes].sort((a, b) => 
-    getPath(a, trainingTypes).localeCompare(getPath(b, trainingTypes))
-  );
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
@@ -96,16 +92,13 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employe
             <div className="relative">
               <select 
                 disabled={fetchingTypes}
-                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-3.5 text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none appearance-none disabled:opacity-50 text-sm"
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-3.5 text-white focus:ring-2 focus:ring-emerald-600 focus:outline-none appearance-none disabled:opacity-50"
                 value={formData.type}
                 onChange={(e) => setFormData({...formData, type: e.target.value})}
               >
                 {fetchingTypes ? (
                   <option>Carregando opções...</option>
-                ) : sortedTypes.map(t => {
-                  const path = getPath(t, trainingTypes);
-                  return <option key={t.id} value={path}>{path}</option>
-                })}
+                ) : trainingTypes.map(nr => <option key={nr} value={nr}>{nr}</option>)}
               </select>
               <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-600">
                 ▼

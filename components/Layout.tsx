@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Users, FileWarning, LogOut, Factory, UserCog, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, FileWarning, LogOut, Factory, UserCog, Settings, BarChart3, Truck } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,12 +15,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'providers', label: 'Prestadores', icon: Users },
+    { id: 'fleet', label: 'Frota Biometano', icon: Truck },
+    { id: 'executive', label: 'Visão Executiva QSSMA', icon: BarChart3 },
     { id: 'alerts', label: 'Alertas Críticos', icon: FileWarning },
     { id: 'users', label: 'Gestão de Usuários', icon: UserCog },
     { id: 'settings', label: 'Configurações', icon: Settings },
   ];
 
-  // Extrai apenas o primeiro nome para uma saudação mais direta no menu
   const firstName = userName?.split(' ')[0] || 'Usuário';
 
   return (
@@ -50,7 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
                 }`}
               >
                 <Icon className="w-5 h-5" />
-                <span className="font-bold text-xs uppercase tracking-wider">{item.label}</span>
+                <span className="font-bold text-xs uppercase tracking-wider text-left leading-tight">{item.label}</span>
               </button>
             );
           })}
@@ -60,7 +61,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
           <div className="bg-slate-800/40 p-4 rounded-2xl mb-4 border border-slate-700/50">
             <p className="text-[9px] text-emerald-500 mb-2 uppercase tracking-[0.2em] font-black flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Tecnico online
+              Operador Online
             </p>
             <div className="text-slate-200 truncate space-y-0.5">
               <p className="text-xs font-black uppercase tracking-tight">{firstName}</p>

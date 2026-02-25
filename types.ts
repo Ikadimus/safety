@@ -20,13 +20,6 @@ export interface AppUser {
   created_at?: string;
 }
 
-export interface TrainingType {
-  id: string;
-  name: string;
-  parent_id?: string | null;
-  created_at?: string;
-}
-
 export interface Document {
   id: string;
   type: string;
@@ -46,6 +39,21 @@ export interface Employee {
   documents: Document[];
 }
 
+export interface VehicleDocument extends Document {
+  vehicleId: string;
+}
+
+export interface Vehicle {
+  id: string;
+  plate: string;
+  model: string;
+  type: string; // e.g., Cavalo, Carreta, Bitrem
+  providerId: string;
+  providerName?: string;
+  documents: VehicleDocument[];
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
 export interface Provider {
   id: string;
   name: string;
@@ -53,4 +61,6 @@ export interface Provider {
   status: ProviderStatus;
   employees: Employee[];
   contactEmail: string;
+  score?: number; // Calculado dinamicamente
+  isBlocked?: boolean; // Baseado no Score e criticidade
 }
