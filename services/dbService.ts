@@ -158,7 +158,8 @@ export const dbService = {
       .select(`
         *,
         providers (name),
-        vehicle_documents (*)
+        vehicle_documents (*),
+        vehicle_maintenances (*)
       `)
       .order('plate');
 
@@ -194,8 +195,31 @@ export const dbService = {
           description: d.description,
           vehicleId: d.vehicle_id
         };
-      })
+      }),
+      maintenances: (v.vehicle_maintenances || []).map((m: any) => ({
+        id: m.id,
+        vehicleId: m.vehicle_id,
+        problemDescription: m.problem_description,
+        maintenanceDescription: m.maintenance_description,
+        technicianName: m.technician_name,
+        maintenanceDate: m.maintenance_date,
+        createdAt: m.created_at
+      })).sort((a: any, b: any) => new Date(b.maintenanceDate).getTime() - new Date(a.maintenanceDate).getTime())
     }));
+  },
+
+  async createVehicleMaintenance(maintenance: { vehicle_id: string, problem_description: string, maintenance_description: string, technician_name: string, maintenance_date: string }) {
+    const { data, error } = await supabase
+      .from('vehicle_maintenances')
+      .insert([maintenance])
+      .select();
+    if (error) throw error;
+    return data[0];
+  },
+
+  async deleteVehicleMaintenance(id: string) {
+    const { error } = await supabase.from('vehicle_maintenances').delete().eq('id', id);
+    if (error) throw error;
   },
 
   async createVehicle(vehicle: { plate: string, model: string, type: string, provider_id: string, status: string }) {
@@ -236,6 +260,26 @@ export const dbService = {
 
   async deleteVehicleDocument(id: string) {
     const { error } = await supabase.from('vehicle_documents').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  async getVehicleDocTypes(): Promise<string[]> {
+    try {
+      const { data, error } = await supabase.from('vehicle_doc_types').select('name').order('name');
+      if (error || !data) throw error;
+      return data.map((t: any) => t.name);
+    } catch {
+      return ['CRLV', 'ANTT', 'CIV', 'CIPP', 'Cronotacógrafo', 'Seguro Ambiental', 'Outro'];
+    }
+  },
+
+  async addVehicleDocType(name: string) {
+    const { error } = await supabase.from('vehicle_doc_types').insert([{ name }]);
+    if (error) throw error;
+  },
+
+  async deleteVehicleDocType(name: string) {
+    const { error } = await supabase.from('vehicle_doc_types').delete().eq('name', name);
     if (error) throw error;
   }
 };

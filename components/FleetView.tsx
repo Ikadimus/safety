@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Truck, Edit2, Trash2, XCircle, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { Vehicle, Provider, VehicleDocument } from '../types';
+import { Plus, Search, Truck, Edit2, Trash2, XCircle, FileText, AlertTriangle, CheckCircle2, Wrench, History, User } from 'lucide-react';
+import { Vehicle, Provider, VehicleDocument, VehicleMaintenance } from '../types';
 import { dbService } from '../services/dbService';
 import AddVehicleModal from './AddVehicleModal';
 import AddDocumentModal from './AddDocumentModal';
+import AddMaintenanceModal from './AddMaintenanceModal';
+import MaintenanceHistoryModal from './MaintenanceHistoryModal';
 
 interface FleetViewProps {
   providers: Provider[];
@@ -18,6 +20,8 @@ const FleetView: React.FC<FleetViewProps> = ({ providers, onRefresh }) => {
   const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<Vehicle | null>(null);
   const [activeAddDoc, setActiveAddDoc] = useState<{id: string, name: string} | null>(null);
+  const [activeAddMaintenance, setActiveAddMaintenance] = useState<{id: string, plate: string} | null>(null);
+  const [vehicleForHistory, setVehicleForHistory] = useState<Vehicle | null>(null);
 
   const fetchVehicles = async () => {
     try {
@@ -58,6 +62,11 @@ const FleetView: React.FC<FleetViewProps> = ({ providers, onRefresh }) => {
 
   const handleAddDocSuccess = () => {
     setActiveAddDoc(null);
+    fetchVehicles();
+  };
+
+  const handleAddMaintenanceSuccess = () => {
+    setActiveAddMaintenance(null);
     fetchVehicles();
   };
 
@@ -113,23 +122,43 @@ const FleetView: React.FC<FleetViewProps> = ({ providers, onRefresh }) => {
               </div>
 
               <div className="p-6 space-y-4">
-                <div>
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Transportadora</p>
-                  <p className="text-sm font-bold text-slate-200">{vehicle.providerName || 'Não vinculada'}</p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Transportadora</p>
+                    <p className="text-sm font-bold text-slate-200">{vehicle.providerName || 'Não vinculada'}</p>
+                  </div>
+                  <button 
+                    onClick={() => setActiveAddMaintenance({ id: vehicle.id, plate: vehicle.plate })}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/20 transition-all text-[10px] font-black uppercase tracking-widest"
+                  >
+                    <Wrench className="w-3 h-3" /> Manutenção
+                  </button>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Documentação</p>
-                    <button 
-                      onClick={() => setActiveAddDoc({ id: vehicle.id, name: vehicle.plate })}
-                      className="text-[9px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
-                    >
-                      + Adicionar
-                    </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setVehicleForHistory(vehicle)}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-950/50 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-slate-800 hover:border-blue-500/40 hover:text-blue-400 transition-all"
+                  >
+                    <History className="w-3.5 h-3.5" /> Histórico
+                  </button>
+                  <div className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-600/10 text-emerald-500 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                    <FileText className="w-3.5 h-3.5" /> Documentos
                   </div>
-                  
+                </div>
+
+                <div className="space-y-2">
                   <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Documentação Ativa</p>
+                      <button 
+                        onClick={() => setActiveAddDoc({ id: vehicle.id, name: vehicle.plate })}
+                        className="text-[9px] font-black text-emerald-500 uppercase tracking-widest hover:underline"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                    
                     {vehicle.documents && vehicle.documents.length > 0 ? (
                       vehicle.documents.map(doc => (
                         <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-950/50 rounded-xl border border-slate-800/50 group/doc">
@@ -160,7 +189,7 @@ const FleetView: React.FC<FleetViewProps> = ({ providers, onRefresh }) => {
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-4 bg-slate-950/30 rounded-xl border border-dashed border-slate-800">
+                      <div className="text-center py-6 bg-slate-950/30 rounded-xl border border-dashed border-slate-800">
                         <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Nenhum documento</p>
                       </div>
                     )}
@@ -183,13 +212,41 @@ const FleetView: React.FC<FleetViewProps> = ({ providers, onRefresh }) => {
       {activeAddDoc && (
         <AddDocumentModal 
           isOpen={!!activeAddDoc}
-          employeeId={activeAddDoc.id} // Reusing AddDocumentModal, but I need to check if it supports vehicles
+          employeeId={activeAddDoc.id}
           employeeName={activeAddDoc.name}
           onClose={() => setActiveAddDoc(null)}
           onSuccess={handleAddDocSuccess}
-          isVehicle={true} // I'll modify AddDocumentModal to support this
+          isVehicle={true}
         />
       )}
+
+      {activeAddMaintenance && (
+        <AddMaintenanceModal 
+          isOpen={!!activeAddMaintenance}
+          vehicleId={activeAddMaintenance.id}
+          vehiclePlate={activeAddMaintenance.plate}
+          onClose={() => setActiveAddMaintenance(null)}
+          onSuccess={handleAddMaintenanceSuccess}
+        />
+      )}
+
+      <MaintenanceHistoryModal 
+        isOpen={!!vehicleForHistory}
+        vehicle={vehicleForHistory}
+        onClose={() => setVehicleForHistory(null)}
+        onRefresh={() => {
+          fetchVehicles();
+          // Update the local vehicle state in the modal if needed, 
+          // but fetchVehicles will update the main list. 
+          // To keep modal in sync, we find the updated vehicle.
+          if (vehicleForHistory) {
+            dbService.getFleetData().then(data => {
+              const updated = data.find(v => v.id === vehicleForHistory.id);
+              if (updated) setVehicleForHistory(updated);
+            });
+          }
+        }}
+      />
     </div>
   );
 };

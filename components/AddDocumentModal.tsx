@@ -26,9 +26,9 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employe
     if (isOpen) {
       const loadTypes = async () => {
         if (isVehicle) {
-          const vehicleTypes = ['CRLV', 'ANTT', 'CIV', 'CIPP', 'Cronotacógrafo', 'Seguro Ambiental', 'Outro'];
-          setTrainingTypes(vehicleTypes);
-          setFormData(prev => ({ ...prev, type: vehicleTypes[0] }));
+          const types = await dbService.getVehicleDocTypes();
+          setTrainingTypes(types);
+          if (types.length > 0) setFormData(prev => ({ ...prev, type: types[0] }));
         } else {
           const types = await dbService.getTrainingTypes();
           setTrainingTypes(types);

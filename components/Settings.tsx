@@ -1,13 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Plus, Trash2, BookOpen, Loader2, Save, Clock, BellRing, ShieldAlert } from 'lucide-react';
+import { Settings as SettingsIcon, Plus, Trash2, BookOpen, Loader2, Save, Clock, BellRing, ShieldAlert, Truck } from 'lucide-react';
 import { dbService } from '../services/dbService';
 
 const Settings: React.FC = () => {
   const [trainingTypes, setTrainingTypes] = useState<string[]>([]);
+  const [vehicleDocTypes, setVehicleDocTypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [newType, setNewType] = useState('');
+  const [newVehicleType, setNewVehicleType] = useState('');
   const [saving, setSaving] = useState(false);
+  const [savingVehicle, setSavingVehicle] = useState(false);
   
   const [alertPeriod, setAlertPeriod] = useState(() => {
     const saved = localStorage.getItem('biosafety_alert_period');
@@ -18,8 +21,12 @@ const Settings: React.FC = () => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const types = await dbService.getTrainingTypes();
+      const [types, vTypes] = await Promise.all([
+        dbService.getTrainingTypes(),
+        dbService.getVehicleDocTypes()
+      ]);
       setTrainingTypes(types);
+      setVehicleDocTypes(vTypes);
     } catch (err) {
       console.error(err);
     } finally {
@@ -46,10 +53,35 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleAddVehicleType = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVehicleType.trim()) return;
+    setSavingVehicle(true);
+    try {
+      await dbService.addVehicleDocType(newVehicleType.trim());
+      setNewVehicleType('');
+      await fetchSettings();
+    } catch (err) {
+      alert("Erro ao adicionar documento de frota.");
+    } finally {
+      setSavingVehicle(false);
+    }
+  };
+
   const handleDelete = async (name: string) => {
     if (!confirm(`Deseja remover "${name}" da lista de opções oficiais?`)) return;
     try {
       await dbService.deleteTrainingType(name);
+      await fetchSettings();
+    } catch (err) {
+      alert("Erro ao excluir.");
+    }
+  };
+
+  const handleDeleteVehicleType = async (name: string) => {
+    if (!confirm(`Deseja remover "${name}" da lista de documentos de frota?`)) return;
+    try {
+      await dbService.deleteVehicleDocType(name);
       await fetchSettings();
     } catch (err) {
       alert("Erro ao excluir.");
@@ -131,7 +163,7 @@ const Settings: React.FC = () => {
               <div className="bg-emerald-500/10 p-2 rounded-lg">
                 <Plus className="w-5 h-5 text-emerald-400" />
               </div>
-              <h3 className="font-black text-white text-sm uppercase tracking-widest">Novo Padrão</h3>
+              <h3 className="font-black text-white text-sm uppercase tracking-widest">Novo Padrão (Colaborador)</h3>
             </div>
             
             <form onSubmit={handleAdd} className="space-y-6">
@@ -151,6 +183,36 @@ const Settings: React.FC = () => {
                 className="w-full flex items-center justify-center gap-3 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-emerald-900/20 disabled:opacity-50"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <><Save className="w-4 h-4 text-white" /> Registrar Opção</>}
+              </button>
+            </form>
+          </div>
+
+          {/* Adição de Doc Frota */}
+          <div className="bg-slate-900 p-8 rounded-[2rem] border border-slate-800 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-blue-500/10 p-2 rounded-lg">
+                <Plus className="w-5 h-5 text-blue-400" />
+              </div>
+              <h3 className="font-black text-white text-sm uppercase tracking-widest">Novo Padrão (Frota)</h3>
+            </div>
+            
+            <form onSubmit={handleAddVehicleType} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nome do Documento</label>
+                <input 
+                  required
+                  placeholder="Ex: Laudo de Estanqueidade"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-blue-600 focus:outline-none transition-all placeholder:text-slate-800"
+                  value={newVehicleType}
+                  onChange={(e) => setNewVehicleType(e.target.value)}
+                />
+              </div>
+              <button 
+                type="submit"
+                disabled={savingVehicle}
+                className="w-full flex items-center justify-center gap-3 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50"
+              >
+                {savingVehicle ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <><Save className="w-4 h-4 text-white" /> Registrar Opção</>}
               </button>
             </form>
           </div>
@@ -186,6 +248,40 @@ const Settings: React.FC = () => {
               )) : (
                 <div className="col-span-full py-12 text-center text-slate-500 italic text-sm">
                   Nenhum treinamento customizado encontrado.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-slate-900 rounded-[2rem] border border-slate-800 shadow-xl overflow-hidden h-fit">
+            <div className="p-6 bg-slate-950/50 border-b border-slate-800 flex items-center justify-between">
+              <h3 className="font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Documentos de Frota Cadastrados</h3>
+              <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                <span className="text-[9px] font-black text-blue-500 uppercase">{vehicleDocTypes.length} Ativos</span>
+              </div>
+            </div>
+            
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+              {loading ? (
+                <div className="col-span-full py-12 flex justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                </div>
+              ) : vehicleDocTypes.length > 0 ? vehicleDocTypes.map((type, idx) => (
+                <div key={idx} className="flex items-center justify-between p-4 bg-slate-950/50 rounded-2xl border border-slate-800 group hover:border-blue-500/30 transition-all">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <Truck className="w-4 h-4 text-slate-600 shrink-0" />
+                    <span className="text-sm font-bold text-slate-200 truncate">{type}</span>
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteVehicleType(type)}
+                    className="p-2 text-slate-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4 text-white hover:text-red-500" />
+                  </button>
+                </div>
+              )) : (
+                <div className="col-span-full py-12 text-center text-slate-500 italic text-sm">
+                  Nenhum documento de frota encontrado.
                 </div>
               )}
             </div>

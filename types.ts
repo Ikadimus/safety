@@ -43,6 +43,16 @@ export interface VehicleDocument extends Document {
   vehicleId: string;
 }
 
+export interface VehicleMaintenance {
+  id: string;
+  vehicleId: string;
+  problemDescription: string;
+  maintenanceDescription: string;
+  technicianName: string;
+  maintenanceDate: string;
+  createdAt?: string;
+}
+
 export interface Vehicle {
   id: string;
   plate: string;
@@ -51,6 +61,7 @@ export interface Vehicle {
   providerId: string;
   providerName?: string;
   documents: VehicleDocument[];
+  maintenances?: VehicleMaintenance[];
   status: 'ACTIVE' | 'INACTIVE';
 }
 
