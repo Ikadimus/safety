@@ -17,7 +17,6 @@ const AddInternalEmployeeModal: React.FC<AddInternalEmployeeModalProps> = ({ isO
     name: '',
     cpf: '',
     role: '',
-    address: '',
     street: '',
     number: '',
     neighborhood: '',
@@ -35,7 +34,6 @@ const AddInternalEmployeeModal: React.FC<AddInternalEmployeeModalProps> = ({ isO
         name: employeeToEdit.name || '',
         cpf: employeeToEdit.cpf || '',
         role: employeeToEdit.role || '',
-        address: employeeToEdit.address || '',
         street: employeeToEdit.street || '',
         number: employeeToEdit.number || '',
         neighborhood: employeeToEdit.neighborhood || '',
@@ -48,7 +46,7 @@ const AddInternalEmployeeModal: React.FC<AddInternalEmployeeModalProps> = ({ isO
       });
     } else {
       setFormData({ 
-        name: '', cpf: '', role: '', address: '', street: '', number: '', neighborhood: '', city: '', state: '', phone: '', emergency_phone: '', department: '', hiring_date: new Date().toISOString().split('T')[0]
+        name: '', cpf: '', role: '', street: '', number: '', neighborhood: '', city: '', state: '', phone: '', emergency_phone: '', department: '', hiring_date: new Date().toISOString().split('T')[0]
       });
     }
   }, [employeeToEdit, isOpen]);

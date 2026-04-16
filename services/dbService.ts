@@ -107,7 +107,6 @@ export const dbService = {
     return (data || []).map((e: any) => ({
       ...e,
       isInternal: e.is_internal,
-      address: e.address,
       street: e.street,
       number: e.number,
       neighborhood: e.neighborhood,
@@ -153,7 +152,6 @@ export const dbService = {
     role: string, 
     provider_id?: string, 
     is_internal?: boolean,
-    address?: string,
     street?: string,
     number?: string,
     neighborhood?: string,
@@ -176,7 +174,6 @@ export const dbService = {
     name: string, 
     cpf: string, 
     role: string,
-    address?: string,
     street?: string,
     number?: string,
     neighborhood?: string,

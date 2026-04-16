@@ -38,7 +38,6 @@ export interface Employee {
   providerId?: string;
   providerName?: string;
   documents: Document[];
-  address?: string;
   phone?: string;
   emergencyPhone?: string;
   department?: string;
