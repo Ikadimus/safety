@@ -15,6 +15,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, onLo
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'providers', label: 'Prestadores', icon: Users },
+    { id: 'internal_employees', label: 'Colaboradores', icon: Factory },
     { id: 'fleet', label: 'Frota Biometano', icon: Truck },
     { id: 'executive', label: 'Visão Executiva QSSMA', icon: BarChart3 },
     { id: 'alerts', label: 'Alertas Críticos', icon: FileWarning },

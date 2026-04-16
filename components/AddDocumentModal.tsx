@@ -10,9 +10,10 @@ interface AddDocumentModalProps {
   onClose: () => void;
   onSuccess: () => void;
   isVehicle?: boolean;
+  isProvider?: boolean;
 }
 
-const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employeeName, isOpen, onClose, onSuccess, isVehicle = false }) => {
+const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employeeName, isOpen, onClose, onSuccess, isVehicle = false, isProvider = false }) => {
   const [loading, setLoading] = useState(false);
   const [fetchingTypes, setFetchingTypes] = useState(true);
   const [trainingTypes, setTrainingTypes] = useState<string[]>([]);
@@ -29,8 +30,13 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employe
           const types = await dbService.getVehicleDocTypes();
           setTrainingTypes(types);
           if (types.length > 0) setFormData(prev => ({ ...prev, type: types[0] }));
+        } else if (isProvider) {
+          const types = await dbService.getProviderDocTypes();
+          setTrainingTypes(types);
+          if (types.length > 0) setFormData(prev => ({ ...prev, type: types[0] }));
         } else {
-          const types = await dbService.getTrainingTypes();
+          // Detecta se é colaborador interno ou de prestador
+          const types = employeeName.includes('•') ? await dbService.getTrainingTypes() : await dbService.getInternalDocTypes();
           setTrainingTypes(types);
           if (types.length > 0) setFormData(prev => ({ ...prev, type: types[0] }));
         }
@@ -38,7 +44,7 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employe
       };
       loadTypes();
     }
-  }, [isOpen, isVehicle]);
+  }, [isOpen, isVehicle, isProvider]);
 
   if (!isOpen) return null;
 
@@ -51,6 +57,11 @@ const AddDocumentModal: React.FC<AddDocumentModalProps> = ({ employeeId, employe
         await dbService.createVehicleDocument({
           ...formData,
           vehicle_id: employeeId
+        });
+      } else if (isProvider) {
+        await dbService.createProviderDocument({
+          ...formData,
+          provider_id: employeeId
         });
       } else {
         await dbService.createDocument({

@@ -35,8 +35,20 @@ export interface Employee {
   name: string;
   cpf: string;
   role: string;
-  providerId: string;
+  providerId?: string;
+  providerName?: string;
   documents: Document[];
+  address?: string;
+  phone?: string;
+  emergencyPhone?: string;
+  department?: string;
+  hiringDate?: string;
+  isInternal: boolean;
+  street?: string;
+  number?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
 }
 
 export interface VehicleDocument extends Document {
@@ -74,4 +86,5 @@ export interface Provider {
   contactEmail: string;
   score?: number; // Calculado dinamicamente
   isBlocked?: boolean; // Baseado no Score e criticidade
+  documents: Document[];
 }

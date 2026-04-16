@@ -10,6 +10,7 @@ import AddProviderModal from './components/AddProviderModal';
 import AddEmployeeModal from './components/AddEmployeeModal';
 import UserAdmin from './components/UserAdmin';
 import Settings from './components/Settings';
+import EmployeesManagement from './components/EmployeesManagement';
 import Login from './components/Login';
 import { dbService } from './services/dbService';
 import { Provider, Employee, Document } from './types';
@@ -154,6 +155,8 @@ const App: React.FC = () => {
             onRefresh={handleRefresh}
           />
         );
+      case 'internal_employees':
+        return <EmployeesManagement />;
       case 'fleet':
         return <FleetView providers={providers} onRefresh={handleRefresh} />;
       case 'executive':

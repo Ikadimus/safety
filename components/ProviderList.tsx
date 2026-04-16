@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { Plus, Search, UserPlus, ShieldCheck, Edit2, Trash2, XCircle } from 'lucide-react';
+import { Plus, Search, UserPlus, ShieldCheck, Edit2, Trash2, XCircle, FilePlus, Building2 } from 'lucide-react';
 import { Provider, Employee } from '../types';
 import { dbService } from '../services/dbService';
 import AddEmployeeModal from './AddEmployeeModal';
+import AddDocumentModal from './AddDocumentModal';
 
 interface ProviderListProps {
   providers: Provider[];
@@ -27,6 +28,15 @@ const ProviderList: React.FC<ProviderListProps> = ({
   onRefresh 
 }) => {
   const [activeAddEmployee, setActiveAddEmployee] = useState<{id: string, name: string} | null>(null);
+  const [activeAddProviderDoc, setActiveAddProviderDoc] = useState<{id: string, name: string} | null>(null);
+
+  const getDocStatusColor = (status: string) => {
+    switch(status) {
+      case 'EXPIRED': return 'bg-red-500/10 text-red-500 border-red-500/20';
+      case 'EXPIRING': return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
+      default: return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+    }
+  };
 
   const filteredProviders = providers.filter(p => {
     const term = searchTerm.toLowerCase().trim();
@@ -120,6 +130,41 @@ const ProviderList: React.FC<ProviderListProps> = ({
               </div>
             </div>
 
+            {/* Documentação Empresa */}
+            <div className="px-6 py-4 bg-slate-900/50 border-b border-slate-800">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-blue-400" />
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Documentação Corporativa</h4>
+                </div>
+                <button onClick={() => setActiveAddProviderDoc({ id: provider.id, name: provider.name })} className="text-[10px] font-black text-blue-400 flex items-center gap-1.5 hover:bg-blue-600/10 px-2 py-1 rounded transition-all uppercase tracking-widest">
+                  <FilePlus className="w-3 h-3" /> Adicionar Doc.
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {provider.documents && provider.documents.length > 0 ? (
+                  provider.documents.map(doc => (
+                    <div key={doc.id} className={`flex items-center gap-3 pl-3 pr-2 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest group/doc ${getDocStatusColor(doc.status)}`}>
+                      <span>{doc.type}</span>
+                      <button 
+                        onClick={async () => {
+                          if (confirm(`Excluir documento ${doc.type}?`)) {
+                            await dbService.deleteProviderDocument(doc.id);
+                            onRefresh();
+                          }
+                        }}
+                        className="opacity-0 group-hover/doc:opacity-100 p-1 hover:bg-red-500 hover:text-white rounded transition-all"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-[9px] text-slate-600 font-bold uppercase italic">Nenhuma documentação da empresa cadastrada.</p>
+                )}
+              </div>
+            </div>
+
             {/* Quadro de Colaboradores */}
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -180,6 +225,15 @@ const ProviderList: React.FC<ProviderListProps> = ({
         providerName={activeAddEmployee?.name || ''}
         onClose={() => setActiveAddEmployee(null)}
         onSuccess={() => { setActiveAddEmployee(null); onRefresh(); }}
+      />
+
+      <AddDocumentModal 
+        isOpen={!!activeAddProviderDoc}
+        employeeId={activeAddProviderDoc?.id || ''}
+        employeeName={activeAddProviderDoc?.name || ''}
+        onClose={() => setActiveAddProviderDoc(null)}
+        onSuccess={() => { setActiveAddProviderDoc(null); onRefresh(); }}
+        isProvider={true}
       />
     </div>
   );
